@@ -6,23 +6,23 @@ import ProductDetails from '../features/products/ProductDetails';
 import Cart from '../features/cart/Cart';
 import Checkout from '../features/orders/Checkout';
 import Invoice from '../features/orders/Invoice';
+import CategoryPage from '../pages/CategoryPage'; // <--- Import the new page
 
 const AppRoutes = () => {
   return (
     <Routes>
       <Route path="/" element={<MainLayout><Home /></MainLayout>} />
       
-      {/* Product Details - Dynamic ID */}
+      {/* Dynamic Category Route */}
+      {/* This one line handles /skincare, /makeup, /haircare, and /shop */}
+      <Route path="/:category" element={<MainLayout><CategoryPage /></MainLayout>} />
+      
       <Route path="/product/:id" element={<MainLayout><ProductDetails /></MainLayout>} />
-      
-      {/* Shopping Cart */}
       <Route path="/cart" element={<MainLayout><Cart /></MainLayout>} />
-      
-      {/* Checkout & Invoice */}
       <Route path="/checkout" element={<MainLayout><Checkout /></MainLayout>} />
-      <Route path="/invoice" element={<MainLayout><Invoice /></MainLayout>} />
+      <Route path="/invoice/:orderId" element={<MainLayout><Invoice /></MainLayout>} />
       
-      <Route path="*" element={<MainLayout><div className="p-20 text-center">404 Not Found</div></MainLayout>} />
+      {/* Note: Remove the specific 404 route if it conflicts, or put it last */}
     </Routes>
   );
 };

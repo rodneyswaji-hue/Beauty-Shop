@@ -2,18 +2,22 @@ import React, { useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useNavigate } from 'react-router-dom';
 import { clearCart } from '../cart/cartSlice';
+import { createOrder } from '../../services/fakeData'; // Import the service
+import { Loader2 } from 'lucide-react'; // Spinner icon
 
 const Checkout = () => {
   const { items, totalAmount } = useSelector((state) => state.cart);
   const dispatch = useDispatch();
   const navigate = useNavigate();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: '', lastName: '', email: '', address: '', city: '', zip: '', card: ''
   });
 
+  // Redirect if cart is empty
   if (items.length === 0) {
-    navigate('/cart');
+    React.useEffect(() => { navigate('/cart'); }, [navigate]);
     return null;
   }
 
@@ -21,20 +25,32 @@ const Checkout = () => {
     setFormData({...formData, [e.target.name]: e.target.value });
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    // Simulate API call
-    const orderDetails = {
-      orderId: 'ORD-' + Math.floor(Math.random() * 100000),
-      date: new Date().toLocaleDateString(),
+    setIsProcessing(true); // Start loading
+
+    const orderPayload = {
+      customer: formData,
       items: items,
       total: totalAmount,
-      customer: formData
     };
-    
-    // Clear cart and go to invoice
-    dispatch(clearCart());
-    navigate('/invoice', { state: { order: orderDetails } });
+
+    try {
+      // 1. Call the Fake DB Service
+      const newOrder = await createOrder(orderPayload);
+      
+      // 2. Clear Redux Cart
+      dispatch(clearCart());
+      
+      // 3. Navigate to Invoice using the NEW generated ID
+      navigate(`/invoice/${newOrder.id}`);
+      
+    } catch (error) {
+      console.error("Checkout failed", error);
+      alert("Something went wrong. Please try again.");
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
@@ -59,21 +75,29 @@ const Checkout = () => {
           <h3 className="font-bold text-lg pt-4">Payment</h3>
           <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
              <p className="text-sm text-gray-500 mb-2">Simulated Payment Gateway</p>
-             <input required name="card" placeholder="Card Number (Any 16 digits)" className="border p-3 rounded-lg w-full bg-white" />
+             <input required name="card" type="text" maxLength="19" placeholder="Card Number (XXXX XXXX XXXX XXXX)" className="border p-3 rounded-lg w-full bg-white" />
           </div>
 
-          <button type="submit" className="w-full bg-pink-600 text-white py-4 rounded-full font-bold hover:bg-pink-700 transition shadow-lg mt-4">
-            Pay ${totalAmount.toFixed(2)}
+          <button 
+            type="submit" 
+            disabled={isProcessing}
+            className="w-full bg-pink-600 text-white py-4 rounded-full font-bold hover:bg-pink-700 transition shadow-lg mt-4 disabled:opacity-70 disabled:cursor-not-allowed flex justify-center items-center"
+          >
+            {isProcessing ? (
+              <><Loader2 className="animate-spin mr-2" /> Processing...</>
+            ) : (
+              `Pay $${totalAmount.toFixed(2)}`
+            )}
           </button>
         </form>
 
-        {/* Mini Summary */}
+        {/* Order Preview */}
         <div className="bg-gray-50 p-8 rounded-2xl h-fit">
           <h3 className="font-serif text-lg mb-4">Your Order</h3>
-          <div className="space-y-3 mb-4">
+          <div className="space-y-3 mb-4 max-h-64 overflow-y-auto">
             {items.map(item => (
               <div key={item.id} className="flex justify-between text-sm">
-                <span>{item.name} x {item.quantity}</span>
+                <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
                 <span className="font-bold">${item.totalPrice.toFixed(2)}</span>
               </div>
             ))}

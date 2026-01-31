@@ -1,9 +1,12 @@
 import React from 'react';
-import { ArrowRight, Truck, ShieldCheck, RefreshCw, Headphones } from 'lucide-react';
-import ProductCard from '../features/products/ProductCard'; // Adjust path based on location
+import { useNavigate } from 'react-router-dom';
+import { ArrowRight, Truck, ShieldCheck, RefreshCw, Headphones, Star } from 'lucide-react';
+import ProductCard from '../features/products/ProductCard';
 import { products, categories } from '../services/fakeData';
 
 const Home = () => {
+  const navigate = useNavigate();
+
   return (
     <div className="space-y-20 pb-20">
       
@@ -21,24 +24,64 @@ const Home = () => {
               Discover our curated selection of premium skincare, luxurious haircare, and elegant makeup designed to bring out your natural glow.
             </p>
             <div className="flex space-x-4 pt-4">
-              <button className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl">
+              <button 
+                onClick={() => navigate('/shop')}
+                className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all shadow-lg hover:shadow-xl"
+              >
                 Shop Now
               </button>
-              <button className="px-8 py-3 bg-white border border-gray-300 text-gray-900 rounded-full font-medium hover:bg-gray-50 transition-all">
+              <button 
+                onClick={() => navigate('/about')}
+                className="px-8 py-3 bg-white border border-gray-300 text-gray-900 rounded-full font-medium hover:bg-gray-50 transition-all"
+              >
                 Learn More
               </button>
             </div>
           </div>
 
-          {/* Hero Image */}
+          {/* Hero Image & Review Badge */}
           <div className="order-1 md:order-2 relative">
             {/* Background Blob */}
             <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-pink-200/50 rounded-full blur-3xl -z-10"></div>
+            
             <img 
               src="https://images.unsplash.com/photo-1629198688000-71f23e745b6e?auto=format&fit=crop&q=80&w=800" 
               alt="Beauty Products" 
               className="w-full h-auto object-cover rounded-2xl shadow-2xl transform md:rotate-2 hover:rotate-0 transition-transform duration-700"
             />
+
+            {/* --- CUSTOMER REVIEW BADGE --- */}
+            <div className="absolute -bottom-6 -left-6 bg-white p-5 rounded-2xl shadow-xl max-w-xs hidden md:block z-20 animate-fade-in-up">
+              <div className="flex items-center gap-3 mb-2">
+                {/* Fake Avatar Stack */}
+                <div className="flex -space-x-3">
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-200 overflow-hidden">
+                    <img src="https://i.pravatar.cc/100?img=5" alt="User" className="w-full h-full object-cover"/>
+                  </div>
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-300 overflow-hidden">
+                    <img src="https://i.pravatar.cc/100?img=9" alt="User" className="w-full h-full object-cover"/>
+                  </div>
+                  <div className="w-10 h-10 rounded-full border-2 border-white bg-gray-400 overflow-hidden">
+                    <img src="https://i.pravatar.cc/100?img=12" alt="User" className="w-full h-full object-cover"/>
+                  </div>
+                </div>
+                <div>
+                  <div className="flex text-yellow-400 text-xs">
+                    <Star size={12} fill="currentColor" />
+                    <Star size={12} fill="currentColor" />
+                    <Star size={12} fill="currentColor" />
+                    <Star size={12} fill="currentColor" />
+                    <Star size={12} fill="currentColor" />
+                  </div>
+                  <span className="font-bold text-xs text-gray-900">1k+ Happy Customers</span>
+                </div>
+              </div>
+              <p className="text-gray-500 text-xs italic">
+                "The best skincare products I've ever used. My skin feels amazing!"
+              </p>
+            </div>
+            {/* ----------------------------- */}
+
           </div>
         </div>
       </section>
@@ -52,7 +95,11 @@ const Home = () => {
         
         <div className="grid md:grid-cols-3 gap-8">
           {categories.map((cat) => (
-            <div key={cat.id} className="group relative h-96 rounded-2xl overflow-hidden cursor-pointer">
+            <div 
+              key={cat.id} 
+              onClick={() => navigate(`/${cat.title.toLowerCase()}`)} 
+              className="group relative h-96 rounded-2xl overflow-hidden cursor-pointer"
+            >
               <img 
                 src={cat.image} 
                 alt={cat.title} 
@@ -90,13 +137,16 @@ const Home = () => {
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-          {products.map((product) => (
+          {products.slice(0, 4).map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </div>
         
         <div className="text-center mt-12">
-          <button className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all">
+          <button 
+            onClick={() => navigate('/shop')}
+            className="px-8 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-all"
+          >
             View All Products
           </button>
         </div>
