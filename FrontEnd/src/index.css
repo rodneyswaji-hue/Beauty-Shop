@@ -1,1 +1,10 @@
 @import "tailwindcss";
+
+/* Fix caret visibility */
+* {
+  caret-color: #ec4899;
+}
+
+*:focus {
+  caret-color: #ec4899;
+}

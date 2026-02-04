@@ -1,11 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { Sparkles } from 'lucide-react';
 import ProductCard from '../features/products/ProductCard';
 import { products } from '../services/fakeData';
 
 const NewArrivals = () => {
+  const [selectedCategory, setSelectedCategory] = useState('All');
+  
   // Filter products marked as new or take the latest ones
   const newProducts = products.filter(product => product.isNew);
+  
+  // Filter by category
+  const filteredProducts = selectedCategory === 'All' 
+    ? newProducts 
+    : newProducts.filter(product => product.category === selectedCategory);
 
   return (
     <div className="max-w-7xl mx-auto px-6 py-12">
@@ -38,7 +45,7 @@ const NewArrivals = () => {
               </p>
               <div className="flex items-center gap-4">
                 <span className="text-2xl font-bold text-gray-900">
-                  ${newProducts[0].price.toFixed(2)}
+                  Kshs. {(newProducts[0].price * 130).toLocaleString()}
                 </span>
                 <button className="px-6 py-3 bg-gray-900 text-white rounded-full font-medium hover:bg-gray-800 transition-colors">
                   Shop Now
@@ -64,11 +71,12 @@ const NewArrivals = () => {
         <div className="flex justify-between items-center mb-8">
           <h2 className="text-2xl font-serif text-gray-900">Latest Additions</h2>
           <div className="flex gap-2">
-            {['All', 'Skincare', 'Makeup', 'Haircare'].map((filter, index) => (
+            {['All', 'Skincare', 'Makeup', 'Haircare'].map((filter) => (
               <button 
                 key={filter}
+                onClick={() => setSelectedCategory(filter)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  index === 0 
+                  selectedCategory === filter
                     ? 'bg-gray-900 text-white' 
                     : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
                 }`}
@@ -79,9 +87,9 @@ const NewArrivals = () => {
           </div>
         </div>
 
-        {newProducts.length > 0 ? (
+        {filteredProducts.length > 0 ? (
           <div className="grid sm:grid-cols-2 lg:grid-cols-4 gap-6">
-            {newProducts.map((product) => (
+            {filteredProducts.map((product) => (
               <div key={product.id} className="relative">
                 <ProductCard product={product} />
                 <div className="absolute top-3 left-3 bg-pink-600 text-white text-xs font-bold px-2 py-1 rounded-full">
@@ -93,7 +101,9 @@ const NewArrivals = () => {
         ) : (
           <div className="text-center py-20 bg-gray-50 rounded-2xl">
             <Sparkles size={48} className="mx-auto mb-4 text-gray-300" />
-            <h3 className="text-xl font-serif text-gray-400 mb-2">No new arrivals yet</h3>
+            <h3 className="text-xl font-serif text-gray-400 mb-2">
+              {selectedCategory === 'All' ? 'No new arrivals yet' : `No new ${selectedCategory.toLowerCase()} products`}
+            </h3>
             <p className="text-gray-400">Check back soon for exciting new products!</p>
           </div>
         )}

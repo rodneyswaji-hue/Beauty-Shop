@@ -204,7 +204,7 @@ const Checkout = () => {
             {isProcessing ? (
               <><Loader2 className="animate-spin mr-2" /> Processing...</>
             ) : (
-              `Pay $${totalAmount.toFixed(2)}`
+              `Pay Kshs. ${(totalAmount * 130).toLocaleString()}`
             )}
           </button>
         </form>
@@ -216,13 +216,13 @@ const Checkout = () => {
             {items.map(item => (
               <div key={item.id} className="flex justify-between text-sm">
                 <span>{item.name} <span className="text-gray-400">x{item.quantity}</span></span>
-                <span className="font-bold">${item.totalPrice.toFixed(2)}</span>
+                <span className="font-bold">Kshs. {(item.totalPrice * 130).toLocaleString()}</span>
               </div>
             ))}
           </div>
           <div className="border-t border-gray-200 pt-4 flex justify-between font-bold text-lg">
             <span>Total</span>
-            <span>${totalAmount.toFixed(2)}</span>
+            <span>Kshs. {(totalAmount * 130).toLocaleString()}</span>
           </div>
         </div>
       </div>

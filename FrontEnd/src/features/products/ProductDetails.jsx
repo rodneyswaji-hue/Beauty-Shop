@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useDispatch, useSelector } from 'react-redux';
 import { products } from '../../services/fakeData'; 
 import { addItemToCart } from '../cart/cartSlice';
 import { Star, Truck, ShieldCheck, Minus, Plus, ShoppingBag, Heart, User } from 'lucide-react';
@@ -9,6 +9,7 @@ const ProductDetails = () => {
   const { id } = useParams();
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isAuthenticated } = useSelector((state) => state.auth);
   
   // Find product
   const product = products.find(p => p.id === parseInt(id));
@@ -24,6 +25,14 @@ const ProductDetails = () => {
   const [showReviewForm, setShowReviewForm] = useState(false);
 
   if (!product) return <div className="p-20 text-center text-red-500">Product not found</div>;
+
+  const handleWriteReview = () => {
+    if (!isAuthenticated) {
+      navigate('/login');
+      return;
+    }
+    setShowReviewForm(!showReviewForm);
+  };
 
   const handleAddToCart = () => {
     for(let i=0; i<qty; i++) {
@@ -96,7 +105,7 @@ const ProductDetails = () => {
             </div>
           </div>
 
-          <div className="text-3xl font-bold text-gray-900">${product.price.toFixed(2)}</div>
+          <div className="text-3xl font-bold text-gray-900">Kshs. {(product.price * 130).toLocaleString()}</div>
 
           <p className="text-gray-600 leading-relaxed">
             {product.description} Experience the ultimate in luxury. Formulated with premium ingredients to revitalize and protect, ensuring you look your best every single day.
@@ -130,7 +139,7 @@ const ProductDetails = () => {
         <div className="flex justify-between items-center mb-10">
           <h2 className="text-2xl font-serif text-gray-900">Customer Reviews</h2>
           <button 
-            onClick={() => setShowReviewForm(!showReviewForm)}
+            onClick={handleWriteReview}
             className="text-pink-600 font-bold border border-pink-200 px-6 py-2 rounded-full hover:bg-pink-50 transition"
           >
             {showReviewForm ? "Cancel" : "Write a Review"}

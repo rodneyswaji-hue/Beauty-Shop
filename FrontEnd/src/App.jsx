@@ -1,6 +1,7 @@
 import React from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import AppRoutes from './routes/AppRoutes';
+import ScrollToTop from './components/ScrollToTop';
 import Toast from './components/Toast';
 import { hideNotification } from './features/cart/cartSlice';
 import { hideWishlistNotification } from './features/wishlist/wishlistSlice';
@@ -20,6 +21,7 @@ function App() {
 
   return (
     <div className="App">
+      <ScrollToTop />
       <AppRoutes />
       <Toast 
         message={cartNotification.message}
