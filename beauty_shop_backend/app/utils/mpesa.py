@@ -20,6 +20,22 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
     access_token = get_access_token()
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     
+    # --- PHONE NUMBER SANITIZATION ---
+    # 1. Convert to string and strip spaces
+    clean_phone = str(phone).strip().replace("+", "")
+    
+    # 2. Convert 07... or 01... to 254...
+    if clean_phone.startswith("0"):
+        clean_phone = "254" + clean_phone[1:]
+    
+    # 3. Final validation: must be digits and correct length
+    if not clean_phone.isdigit() or len(clean_phone) != 12:
+        return {
+            "errorCode": "400.002.02",
+            "errorMessage": f"Bad Request - Invalid PhoneNumber Format: {clean_phone}"
+        }
+    # ---------------------------------
+
     # Password must be Base64(ShortCode + Passkey + Timestamp)
     password_str = BUSINESS_SHORTCODE + PASSKEY + timestamp
     password = base64.b64encode(password_str.encode()).decode('utf-8')
@@ -32,9 +48,9 @@ def initiate_stk_push(phone: str, amount: int, invoice_no: str):
         "Timestamp": timestamp,
         "TransactionType": "CustomerPayBillOnline",
         "Amount": int(amount),
-        "PartyA": phone, # Phone number must be 2547XXXXXXXX
+        "PartyA": clean_phone, 
         "PartyB": BUSINESS_SHORTCODE,
-        "PhoneNumber": phone,
+        "PhoneNumber": clean_phone,
         "CallBackURL": "https://mydomain.com/api/orders/callback", 
         "AccountReference": invoice_no,
         "TransactionDesc": "Beauty Shop Purchase"
