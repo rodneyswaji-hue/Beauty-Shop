@@ -1,9 +1,10 @@
 from reportlab.pdfgen import canvas
 from reportlab.lib.pagesizes import letter
+from datetime import datetime
 import os
 
 def generate_invoice_pdf(invoice_number: str, amount: float, email: str):
-    # Ensure the 'invoices' folder exists at root level
+    # Ensure the 'invoices' folder exists
     os.makedirs("invoices", exist_ok=True)
     
     file_name = f"invoice_{invoice_number}.pdf"
@@ -15,7 +16,7 @@ def generate_invoice_pdf(invoice_number: str, amount: float, email: str):
     
     # Header
     c.setFont("Helvetica-Bold", 22)
-    c.drawCentredString(width/2, height - 50, "BEAUTY SHOP LTD")
+    c.drawCentredString(width/2.0, height - 50, "BEAUTY SHOP LTD")
     
     # Invoice Metadata
     c.setFont("Helvetica", 12)
