@@ -1,6 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { getOrderById } from '../../services/fakeData'; // Import service
+import { ordersAPI } from '../../services/api';
 import { CheckCircle, Printer, Loader2 } from 'lucide-react';
 
 const Invoice = () => {
@@ -10,13 +10,36 @@ const Invoice = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Simulate fetching from DB
-    const foundOrder = getOrderById(orderId);
+    const fetchOrder = async () => {
+      try {
+        const response = await ordersAPI.getById(orderId);
+        const orderData = response.data;
+        
+        // Parse JSON fields if they're strings
+        if (typeof orderData.customer_json === 'string') {
+          orderData.customer = JSON.parse(orderData.customer_json);
+        } else {
+          orderData.customer = orderData.customer_json;
+        }
+        
+        if (typeof orderData.items_json === 'string') {
+          orderData.items = JSON.parse(orderData.items_json);
+        } else {
+          orderData.items = orderData.items_json;
+        }
+        
+        orderData.total = orderData.total_amount;
+        orderData.createdAt = orderData.created_at;
+        
+        setOrder(orderData);
+      } catch (error) {
+        console.error('Error fetching order:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
     
-    if (foundOrder) {
-      setOrder(foundOrder);
-    }
-    setLoading(false);
+    fetchOrder();
   }, [orderId]);
 
   if (loading) return <div className="flex h-screen items-center justify-center"><Loader2 className="animate-spin" /></div>;
@@ -60,7 +83,7 @@ const Invoice = () => {
           </div>
           <div className="text-right">
              <h3 className="text-xs font-bold uppercase text-gray-400 mb-2">Status:</h3>
-             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">Paid</span>
+             <span className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-bold">{order.status || 'Paid'}</span>
           </div>
         </div>
 

@@ -1,17 +1,25 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
 import { 
   Plus, Search, Filter, Edit, Trash2, Eye, Package, 
   Star, DollarSign, MoreVertical 
 } from 'lucide-react';
-import { products } from '../../services/fakeData';
+import { fetchProducts } from '../products/productsSlice';
+import { productsAPI } from '../../services/api';
 
 const ManageProducts = () => {
+  const dispatch = useDispatch();
+  const { items: products } = useSelector((state) => state.products);
   const [searchTerm, setSearchTerm] = useState('');
   const [filterCategory, setFilterCategory] = useState('all');
   const [sortBy, setSortBy] = useState('name');
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState(null);
+
+  useEffect(() => {
+    dispatch(fetchProducts());
+  }, [dispatch]);
 
   const categories = ['all', 'Skincare', 'Haircare', 'Makeup'];
   
@@ -35,11 +43,16 @@ const ManageProducts = () => {
     setShowDeleteModal(true);
   };
 
-  const confirmDelete = () => {
-    // Handle delete logic here
-    console.log('Deleting product:', selectedProduct);
-    setShowDeleteModal(false);
-    setSelectedProduct(null);
+  const confirmDelete = async () => {
+    try {
+      await productsAPI.delete(selectedProduct.id);
+      dispatch(fetchProducts());
+      setShowDeleteModal(false);
+      setSelectedProduct(null);
+    } catch (error) {
+      console.error('Error deleting product:', error);
+      alert('Failed to delete product');
+    }
   };
 
   return (

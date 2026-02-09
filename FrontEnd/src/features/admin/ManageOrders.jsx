@@ -1,5 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector, useDispatch } from 'react-redux';
+import { fetchAllOrders } from '../orders/ordersSlice';
+import { ordersAPI } from '../../services/api';
 import { 
   Search, Filter, Eye, Package, Truck, CheckCircle, 
   Clock, DollarSign, User, Calendar, Download, FileText 
@@ -7,61 +10,24 @@ import {
 
 const ManageOrders = () => {
   const navigate = useNavigate();
+  const dispatch = useDispatch();
+  const { orders, isLoading } = useSelector((state) => state.orders);
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('all');
 
-  // Mock orders data
-  const orders = [
-    {
-      id: 'ORD-001',
-      customer: { name: 'Sarah Johnson', email: 'sarah@example.com' },
-      date: '2024-01-20',
-      total: 16120.00,
-      status: 'Processing',
-      items: [
-        { name: 'Radiance Vitamin C Serum', quantity: 1, price: 6240.00 },
-        { name: 'Hydra-Boost Moisturizer', quantity: 1, price: 7280.00 },
-        { name: 'Velvet Matte Lipstick', quantity: 1, price: 2600.00 }
-      ],
-      paymentMethod: 'M-Pesa',
-      shippingAddress: '123 Beauty Lane, Nairobi'
-    },
-    {
-      id: 'ORD-002',
-      customer: { name: 'Mike Chen', email: 'mike@example.com' },
-      date: '2024-01-19',
-      total: 11635.00,
-      status: 'Shipped',
-      items: [
-        { name: 'Argan Repair Hair Oil', quantity: 1, price: 4680.00 },
-        { name: 'Sunshield SPF 50 Sunscreen', quantity: 1, price: 3770.00 },
-        { name: 'Volume Boost Shampoo', quantity: 1, price: 3185.00 }
-      ],
-      paymentMethod: 'Card',
-      shippingAddress: '456 Glow Street, Mombasa'
-    },
-    {
-      id: 'ORD-003',
-      customer: { name: 'Emma Davis', email: 'emma@example.com' },
-      date: '2024-01-18',
-      total: 20378.00,
-      status: 'Delivered',
-      items: [
-        { name: 'Radiance Vitamin C Serum', quantity: 2, price: 12480.00 },
-        { name: 'Velvet Matte Lipstick', quantity: 2, price: 7898.00 }
-      ],
-      paymentMethod: 'M-Pesa',
-      shippingAddress: '789 Beauty Boulevard, Kisumu'
-    }
-  ];
+  useEffect(() => {
+    dispatch(fetchAllOrders());
+  }, [dispatch]);
 
   const statusOptions = ['all', 'Processing', 'Shipped', 'Delivered', 'Cancelled'];
   
   const filteredOrders = orders.filter(order => {
-    const matchesSearch = order.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         order.customer.name.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesStatus = statusFilter === 'all' || order.status === statusFilter;
+    const customerData = order.customer_json ? JSON.parse(order.customer_json) : {};
+    const matchesSearch = order.invoice_number?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customerData.firstName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         customerData.lastName?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === 'all' || order.status === statusFilter.toLowerCase();
     return matchesSearch && matchesStatus;
   });
 
@@ -84,9 +50,13 @@ const ManageOrders = () => {
     }
   };
 
-  const updateOrderStatus = (orderId, newStatus) => {
-    console.log(`Updating order ${orderId} to ${newStatus}`);
-    // Handle status update logic here
+  const updateOrderStatus = async (orderId, newStatus) => {
+    try {
+      await ordersAPI.updateStatus(orderId, newStatus.toLowerCase());
+      dispatch(fetchAllOrders());
+    } catch (error) {
+      console.error('Failed to update order status:', error);
+    }
   };
 
   const exportOrders = () => {
@@ -218,26 +188,30 @@ Shipping Address: ${order.shippingAddress}
 
       {/* Orders List */}
       <div className="space-y-4">
-        {filteredOrders.map((order) => (
+        {filteredOrders.map((order) => {
+          const customer = order.customer_json ? JSON.parse(order.customer_json) : {};
+          const items = order.items_json ? JSON.parse(order.items_json) : [];
+          
+          return (
           <div key={order.id} className="bg-white rounded-2xl shadow-sm border border-gray-100 p-6">
             
             {/* Order Header */}
             <div className="flex flex-col lg:flex-row lg:items-center justify-between mb-4 gap-4">
               <div className="flex items-center gap-4">
                 <div>
-                  <h3 className="font-medium text-gray-900">{order.id}</h3>
+                  <h3 className="font-medium text-gray-900">{order.invoice_number || `#${order.id}`}</h3>
                   <div className="flex items-center gap-4 text-sm text-gray-500 mt-1">
                     <div className="flex items-center gap-1">
                       <User size={14} />
-                      <span>{order.customer.name}</span>
+                      <span>{customer.firstName} {customer.lastName}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <Calendar size={14} />
-                      <span>{order.date}</span>
+                      <span>{new Date(order.created_at).toLocaleDateString()}</span>
                     </div>
                     <div className="flex items-center gap-1">
                       <DollarSign size={14} />
-                      <span>Kshs. {order.total.toLocaleString()}</span>
+                      <span>Kshs. {order.total_amount?.toLocaleString()}</span>
                     </div>
                   </div>
                 </div>
@@ -247,7 +221,7 @@ Shipping Address: ${order.shippingAddress}
                 <div className="flex items-center gap-2">
                   {getStatusIcon(order.status)}
                   <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(order.status)}`}>
-                    {order.status}
+                    {order.status?.toUpperCase()}
                   </span>
                 </div>
                 
@@ -271,13 +245,13 @@ Shipping Address: ${order.shippingAddress}
               <div>
                 <h4 className="font-medium text-gray-900 mb-3">Order Items</h4>
                 <div className="space-y-2">
-                  {order.items.map((item, index) => (
+                  {items.map((item, index) => (
                     <div key={index} className="flex justify-between items-center py-2 border-b border-gray-50 last:border-0">
                       <div>
                         <p className="text-sm font-medium text-gray-900">{item.name}</p>
                         <p className="text-xs text-gray-500">Qty: {item.quantity}</p>
                       </div>
-                      <span className="text-sm font-medium text-gray-900">Kshs. {item.price.toLocaleString()}</span>
+                      <span className="text-sm font-medium text-gray-900">Kshs. {item.price?.toLocaleString()}</span>
                     </div>
                   ))}
                 </div>
@@ -289,15 +263,11 @@ Shipping Address: ${order.shippingAddress}
                 <div className="space-y-2 text-sm">
                   <div>
                     <span className="text-gray-500">Email:</span>
-                    <span className="ml-2 text-gray-900">{order.customer.email}</span>
+                    <span className="ml-2 text-gray-900">{customer.email}</span>
                   </div>
                   <div>
-                    <span className="text-gray-500">Payment:</span>
-                    <span className="ml-2 text-gray-900">{order.paymentMethod}</span>
-                  </div>
-                  <div>
-                    <span className="text-gray-500">Shipping:</span>
-                    <span className="ml-2 text-gray-900">{order.shippingAddress}</span>
+                    <span className="text-gray-500">Address:</span>
+                    <span className="ml-2 text-gray-900">{customer.address}, {customer.city}</span>
                   </div>
                 </div>
               </div>
@@ -321,7 +291,8 @@ Shipping Address: ${order.shippingAddress}
               </button>
             </div>
           </div>
-        ))}
+          );
+        })}
       </div>
 
       {/* Empty State */}

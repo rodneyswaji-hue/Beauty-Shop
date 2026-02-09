@@ -1,19 +1,19 @@
 import React, { useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
-import { useDispatch } from 'react-redux';
+import { useNavigate, Link } from 'react-router-dom';
+import { useDispatch, useSelector } from 'react-redux';
 import { Eye, EyeOff, Mail, Lock, ArrowLeft } from 'lucide-react';
-import { loginStart, loginSuccess } from './authSlice';
+import { loginSuccess, loginUser } from './authSlice';
 
 const Login = () => {
   const [formData, setFormData] = useState({
     email: '',
     password: '',
-    userType: 'customer' // 'customer' or 'admin'
+    userType: 'customer'
   });
   const [showPassword, setShowPassword] = useState(false);
-  const [isLoading, setIsLoading] = useState(false);
   const navigate = useNavigate();
   const dispatch = useDispatch();
+  const { isLoading, error } = useSelector((state) => state.auth);
 
   const handleChange = (e) => {
     setFormData({
@@ -24,31 +24,19 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    dispatch(loginStart());
-    setIsLoading(true);
     
-    // Simulate API call
-    setTimeout(() => {
-      const mockUser = {
-        id: 1,
-        firstName: 'Sarah',
-        lastName: 'Johnson',
-        email: formData.email,
-        phone: '+1 (555) 123-4567',
-        address: '123 Beauty Lane, Glow City, GC 12345',
-        role: formData.userType === 'admin' || formData.email === 'admin@bloombeauty.com' ? 'admin' : 'customer'
-      };
-      
-      dispatch(loginSuccess(mockUser));
-      setIsLoading(false);
-      
-      // Redirect based on role
-      if (formData.userType === 'admin') {
-        navigate('/admin');
-      } else {
-        navigate('/');
-      }
-    }, 1500);
+    // TEMPORARY: Skip backend, login directly
+    if (formData.email === 'admin@gmail.com' && formData.password === 'admin123') {
+      localStorage.setItem('token', 'fake-admin-token');
+      dispatch(loginSuccess({ 
+        email: 'admin@gmail.com', 
+        is_admin: true,
+        token: 'fake-admin-token'
+      }));
+      navigate('/admin');
+    } else {
+      alert('Invalid credentials. Use: admin@gmail.com / admin123');
+    }
   };
 
   return (
@@ -123,6 +111,13 @@ const Login = () => {
               </div>
             </div>
 
+            {/* Error Message */}
+            {error && (
+              <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-xl text-sm">
+                {error}
+              </div>
+            )}
+
             {/* Password Field */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">Password</label>
@@ -169,14 +164,23 @@ const Login = () => {
           </form>
 
           {/* Divider */}
-          <div className="mt-6 text-center">
-            <span className="text-gray-500 text-sm">
-              Don't have an account?{' '}
-              <Link to="/register" className="text-pink-600 hover:text-pink-700 font-medium">
-                Sign up
-              </Link>
-            </span>
-          </div>
+          {formData.userType === 'customer' && (
+            <div className="mt-6 text-center">
+              <span className="text-gray-500 text-sm">
+                Don't have an account?{' '}
+                <Link to="/register" className="text-pink-600 hover:text-pink-700 font-medium">
+                  Sign up
+                </Link>
+              </span>
+            </div>
+          )}
+          {formData.userType === 'admin' && (
+            <div className="mt-6 text-center">
+              <span className="text-gray-500 text-sm">
+                Admin Personnel Only
+              </span>
+            </div>
+          )}
         </div>
       </div>
     </div>

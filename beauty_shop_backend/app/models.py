@@ -30,6 +30,9 @@ class Product(Base):
     price = Column(Float)
     stock_quantity = Column(Integer, default=0)
     category_id = Column(Integer, ForeignKey("categories.id"))
+    image = Column(String, nullable=True)
+    rating = Column(Float, default=4.5)
+    is_new = Column(Boolean, default=False)
     
     category = relationship("Category", back_populates="products")
 

@@ -1,106 +1,59 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { 
   Search, Plus, Edit, Trash2, Shield, User, Mail, 
   Calendar, MoreVertical, UserCheck, UserX 
 } from 'lucide-react';
 import Notification from '../../components/Notification';
+import { usersAPI } from '../../services/api';
 
 const ManageUsers = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState('all');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const navigate = useNavigate();
 
-  // Mock users data
-  const users = [
-    {
-      id: 1,
-      firstName: 'Sarah',
-      lastName: 'Johnson',
-      email: 'sarah@example.com',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-01-15',
-      lastLogin: '2024-01-20',
-      orders: 5,
-      totalSpent: 58500.00
-    },
-    {
-      id: 2,
-      firstName: 'Mike',
-      lastName: 'Chen',
-      email: 'mike@example.com',
-      role: 'customer',
-      status: 'active',
-      joinDate: '2024-01-10',
-      lastLogin: '2024-01-19',
-      orders: 3,
-      totalSpent: 36465.00
-    },
-    {
-      id: 3,
-      firstName: 'Emma',
-      lastName: 'Davis',
-      email: 'emma@example.com',
-      role: 'order_manager',
-      status: 'active',
-      joinDate: '2023-12-01',
-      lastLogin: '2024-01-20',
-      orders: 0,
-      totalSpent: 0
-    },
-    {
-      id: 4,
-      firstName: 'John',
-      lastName: 'Smith',
-      email: 'john@example.com',
-      role: 'customer',
-      status: 'inactive',
-      joinDate: '2023-11-20',
-      lastLogin: '2023-12-15',
-      orders: 1,
-      totalSpent: 8742.50
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const fetchUsers = async () => {
+    try {
+      const response = await usersAPI.getAll();
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+      showNotification('Failed to load users', 'error');
+    } finally {
+      setIsLoading(false);
     }
-  ];
+  };
 
   const roles = ['all', 'customer', 'admin'];
   const statuses = ['all', 'active', 'inactive'];
 
   const filteredUsers = users.filter(user => {
-    const matchesSearch = 
-      user.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.lastName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      user.email.toLowerCase().includes(searchTerm.toLowerCase());
-    const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    const matchesStatus = statusFilter === 'all' || user.status === statusFilter;
-    return matchesSearch && matchesRole && matchesStatus;
+    const matchesSearch = user.email.toLowerCase().includes(searchTerm.toLowerCase());
+    const userRole = user.is_admin ? 'admin' : 'customer';
+    const matchesRole = roleFilter === 'all' || userRole === roleFilter;
+    return matchesSearch && matchesRole;
   });
 
-  const getRoleColor = (role) => {
-    switch (role) {
-      case 'admin': return 'bg-red-100 text-red-800';
-      case 'order_manager': return 'bg-blue-100 text-blue-800';
-      case 'customer': return 'bg-green-100 text-green-800';
-      default: return 'bg-gray-100 text-gray-800';
+  const getRoleColor = (isAdmin) => {
+    return isAdmin ? 'bg-red-100 text-red-800' : 'bg-green-100 text-green-800';
+  };
+
+  const handleRoleChange = async (userId, isAdmin) => {
+    try {
+      await usersAPI.update(userId, { is_admin: isAdmin });
+      await fetchUsers();
+      showNotification('User role updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating role:', error);
+      showNotification('Failed to update user role', 'error');
     }
-  };
-
-  const getStatusColor = (status) => {
-    return status === 'active' 
-      ? 'bg-green-100 text-green-800' 
-      : 'bg-gray-100 text-gray-800';
-  };
-
-  const handleRoleChange = (userId, newRole) => {
-    console.log(`Changing user ${userId} role to ${newRole}`);
-    // Handle role change logic here
-  };
-
-  const handleStatusToggle = (userId, currentStatus) => {
-    const newStatus = currentStatus === 'active' ? 'inactive' : 'active';
-    console.log(`Changing user ${userId} status to ${newStatus}`);
-    // Handle status toggle logic here
   };
 
   const handleEditUser = (user) => {
@@ -108,18 +61,32 @@ const ManageUsers = () => {
     setShowEditModal(true);
   };
 
-  const saveUserChanges = () => {
-    console.log('Saving user changes:', editingUser);
-    setShowEditModal(false);
-    setEditingUser(null);
-    showNotification('User updated successfully', 'success');
+  const saveUserChanges = async () => {
+    try {
+      await usersAPI.update(editingUser.id, { 
+        email: editingUser.email,
+        is_admin: editingUser.is_admin 
+      });
+      await fetchUsers();
+      setShowEditModal(false);
+      setEditingUser(null);
+      showNotification('User updated successfully', 'success');
+    } catch (error) {
+      console.error('Error updating user:', error);
+      showNotification('Failed to update user', 'error');
+    }
   };
 
-  const handleDeleteUser = (userId) => {
+  const handleDeleteUser = async (userId) => {
     if (window.confirm('Are you sure you want to delete this user? This action cannot be undone.')) {
-      console.log(`Deleting user ${userId}`);
-      // Handle user deletion logic here
-      showNotification('User deleted successfully', 'success');
+      try {
+        await usersAPI.delete(userId);
+        await fetchUsers();
+        showNotification('User deleted successfully', 'success');
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        showNotification('Failed to delete user', 'error');
+      }
     }
   };
 
@@ -193,6 +160,7 @@ const ManageUsers = () => {
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
             className="px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
+            disabled
           >
             {statuses.map(status => (
               <option key={status} value={status}>
@@ -234,10 +202,8 @@ const ManageUsers = () => {
                         <User size={18} className="text-pink-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900">
-                          {user.firstName} {user.lastName}
-                        </p>
-                        <p className="text-sm text-gray-500">{user.email}</p>
+                        <p className="font-medium text-gray-900">{user.email}</p>
+                        <p className="text-sm text-gray-500">ID: {user.id}</p>
                       </div>
                     </div>
                   </td>
@@ -245,9 +211,9 @@ const ManageUsers = () => {
                   {/* Role */}
                   <td className="py-4 px-6">
                     <select
-                      value={user.role}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 ${getRoleColor(user.role)}`}
+                      value={user.is_admin ? 'admin' : 'customer'}
+                      onChange={(e) => handleRoleChange(user.id, e.target.value === 'admin')}
+                      className={`px-3 py-1 rounded-full text-xs font-medium border-0 ${getRoleColor(user.is_admin)}`}
                     >
                       <option value="customer">Customer</option>
                       <option value="admin">Admin</option>
@@ -256,37 +222,22 @@ const ManageUsers = () => {
 
                   {/* Status */}
                   <td className="py-4 px-6">
-                    <button
-                      onClick={() => handleStatusToggle(user.id, user.status)}
-                      className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(user.status)}`}
-                    >
-                      {user.status === 'active' ? (
-                        <span className="flex items-center gap-1">
-                          <UserCheck size={12} />
-                          Active
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1">
-                          <UserX size={12} />
-                          Inactive
-                        </span>
-                      )}
-                    </button>
+                    <span className="px-3 py-1 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                      Active
+                    </span>
                   </td>
 
                   {/* Activity */}
                   <td className="py-4 px-6">
                     <div className="text-sm">
-                      <p className="text-gray-900">Joined: {user.joinDate}</p>
-                      <p className="text-gray-500">Last: {user.lastLogin}</p>
+                      <p className="text-gray-900">Joined: {user.created_at?.split('T')[0] || 'N/A'}</p>
                     </div>
                   </td>
 
                   {/* Orders */}
                   <td className="py-4 px-6">
                     <div className="text-sm">
-                      <p className="text-gray-900">{user.orders} orders</p>
-                      <p className="text-gray-500">Kshs. {user.totalSpent.toLocaleString()} spent</p>
+                      <p className="text-gray-500">-</p>
                     </div>
                   </td>
 
@@ -322,26 +273,6 @@ const ManageUsers = () => {
             
             <div className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                <input
-                  type="text"
-                  value={editingUser.firstName}
-                  onChange={(e) => setEditingUser({...editingUser, firstName: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
-                <input
-                  type="text"
-                  value={editingUser.lastName}
-                  onChange={(e) => setEditingUser({...editingUser, lastName: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
-                />
-              </div>
-              
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Email</label>
                 <input
                   type="email"
@@ -354,8 +285,8 @@ const ManageUsers = () => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">Role</label>
                 <select
-                  value={editingUser.role}
-                  onChange={(e) => setEditingUser({...editingUser, role: e.target.value})}
+                  value={editingUser.is_admin ? 'admin' : 'customer'}
+                  onChange={(e) => setEditingUser({...editingUser, is_admin: e.target.value === 'admin'})}
                   className="w-full px-4 py-2 border border-gray-200 rounded-xl focus:ring-2 focus:ring-pink-500 focus:border-transparent"
                 >
                   <option value="customer">Customer</option>
